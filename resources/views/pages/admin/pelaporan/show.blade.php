@@ -100,9 +100,9 @@
                                 <tr>
                                     <th>Foto Kejadian</th>
                                     <td>:</td>
-                                    <td><a href="{{ Storage::url($pelaporan->foto) }}" class="popup-image">
-                                            <img src="{{ Storage::url($pelaporan->foto) }}" class="card-img"
-                                                style="width: 200px;"></td>
+                                    <td><a href="{{ $pelaporan->foto }}" class="popup-image" target="_blank">
+                                            <img src="{{ $pelaporan->foto }}" class="card-img" style="width: 200px;">
+                                        </a></td>
                                 </tr>
                                 <tr>
                                     <th>Hapus Pelaporan</th>

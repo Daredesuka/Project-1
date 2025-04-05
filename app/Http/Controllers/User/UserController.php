@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 
@@ -106,6 +107,7 @@ class UserController extends Controller
             'isi_laporan' => ['required','min:5'],
             'tgl_kejadian' => ['required', 'before_or_equal:'.now()->format('Y-M-d H:i:s')],
             'lokasi_kejadian' => ['required','min:5'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048']
         ]);
 
         if ($validate->fails()) {
@@ -114,7 +116,8 @@ class UserController extends Controller
 
 
         if ($request->file('foto')) {
-            $data['foto'] = $request->file('foto')->store('assets/pelaporan', 'public');
+            $data['foto'] = $request->file('foto')->store('pelaporan', 's3');
+            Storage::disk('s3')->setVisibility($data['foto'], 'public');
         }
 
         date_default_timezone_set('Asia/Bangkok');
@@ -129,7 +132,7 @@ class UserController extends Controller
             'isi_laporan' => $data['isi_laporan'],
             'tgl_kejadian' => $data['tgl_kejadian'],
             'lokasi_kejadian' => $data['lokasi_kejadian'],
-            'foto' => $data['foto'] ?? 'assets/pelaporan/no-image.jpg',
+            'foto' => isset($data['foto']) ? Storage::disk('s3')->url($data['foto']) : 'assets/pelaporan/no-image.jpg',
             'status' => 'pending',
         ]);
 
@@ -159,7 +162,6 @@ class UserController extends Controller
     return view('pages.user.laporan', ['pelaporan' => $pelaporan, 'hitung' => $hitung, 'who' => $who]);
     }
 
-
     public function detailPelaporan($id_pelaporan)
     {
         $pelaporan = Pelaporan::where('id_pelaporan', $id_pelaporan)->first();
@@ -187,6 +189,7 @@ class UserController extends Controller
             'isi_laporan' => ['required'],
             'tgl_kejadian' => ['required'],
             'lokasi_kejadian' => ['required'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048']
         ]);
 
         if ($validate->fails()) {
@@ -194,9 +197,11 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('foto')) {
-            $data['foto'] = $request->file('foto')->store('assets/pelaporan', 'public');
+            $fotoPath = $request->file('foto')->store('pelaporan', 's3');
+            Storage::disk('s3')->setVisibility($fotoPath, 'public');
+            $data['foto'] = Storage::disk('s3')->url($fotoPath);
         } else {
-            $data['foto'] = 'assets/pelaporan/no-image.jpg'; // Atur gambar default di sini
+            $data['foto'] = $pelaporan->foto;
         }
 
         $pelaporan = Pelaporan::where('id_pelaporan', $id_pelaporan)->first();
